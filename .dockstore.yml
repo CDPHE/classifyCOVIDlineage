@@ -1,0 +1,5 @@
+version: 1.2
+workflows:
+   - name: classifyCOVIDlineage
+     subclass: WDL
+     primaryDescriptorPath: classifyCOVIDlineage/classifyCOVIDlineage.wdl
