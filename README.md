@@ -5,4 +5,4 @@ Takes the consensus fasta SARS-CoV-2 genome assembly outputs of IlluminaPreproce
 2. uses Nextclade to assign clade
 3. exports the outputs to your chosen google bucket
 
-The google bucket to which the outpus should be sent should be set as a Terra input as a String in double quotes
+The google bucket to which the outputs should be sent should be set as a Terra input as a String in double quotes
