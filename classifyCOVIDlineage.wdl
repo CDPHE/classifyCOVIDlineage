@@ -3,9 +3,10 @@ version 1.0
 workflow classifyCOVIDlineage {
 
     input {
-        Array[File] assembly_fastas
-        Array[File] cov_out_txt
-        Array[File] percent_cvg_csv
+        Array[String] sample_id
+        Array[File?] assembly_fastas
+        Array[File?] cov_out_txt
+        Array[File?] percent_cvg_csv
         File nextclade_json_parser_script
         File concat_results_script
         String seq_run
@@ -14,7 +15,7 @@ workflow classifyCOVIDlineage {
 
     call concatenate {
         input:
-            assembly_fastas = assembly_fastas
+            assembly_fastas_non_empty = select_all(assembly_fastas)
     }
 
     call pangolin {
@@ -36,9 +37,10 @@ workflow classifyCOVIDlineage {
 
     call results_table {
       input:
+        sample_id = sample_id,
         concat_results_script = concat_results_script,
-        cov_out_txt = cov_out_txt,
-        percent_cvg_csv = percent_cvg_csv,
+        cov_out_txt_non_empty = select_all(cov_out_txt),
+        percent_cvg_csv_non_empty = select_all(percent_cvg_csv),
         pangolin_lineage_csv = pangolin.lineage,
         pangolin_version = pangolin.pangolin_version,
         nextclade_clades_csv = parse_nextclade.nextclade_clades_csv,
@@ -82,12 +84,12 @@ workflow classifyCOVIDlineage {
 task concatenate {
 
     input {
-        Array[File] assembly_fastas
+        Array[File] assembly_fastas_non_empty
     }
 
     command <<<
 
-        cat ~{sep=" " assembly_fastas} > concatenate_assemblies.fasta
+        cat ~{sep=" " assembly_fastas_non_empty} > concatenate_assemblies.fasta
 
     >>>
 
@@ -197,9 +199,10 @@ task parse_nextclade {
 task results_table {
 
     input {
+      Array[String] sample_id
       File concat_results_script
-      Array[File] cov_out_txt
-      Array[File] percent_cvg_csv
+      Array[File] cov_out_txt_non_empty
+      Array[File] percent_cvg_csv_non_empty
       File pangolin_lineage_csv
       String pangolin_version
       File nextclade_clades_csv
@@ -210,8 +213,9 @@ task results_table {
 
     command {
       python ~{concat_results_script} \
-          --bam_file_list ${write_lines(cov_out_txt)} \
-          --percent_cvg_file_list ${write_lines(percent_cvg_csv)} \
+          --sample_list ${write_lines(sample_id)} \
+          --bam_file_list ${write_lines(cov_out_txt_non_empty)} \
+          --percent_cvg_file_list ${write_lines(percent_cvg_csv_non_empty)} \
           --pangolin_lineage_csv ~{pangolin_lineage_csv} \
           --pangolin_version "~{pangolin_version}" \
           --nextclade_clades_csv ~{nextclade_clades_csv} \
