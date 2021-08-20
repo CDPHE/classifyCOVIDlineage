@@ -7,6 +7,10 @@ workflow classifyCOVIDlineage {
         Array[File?] assembly_fastas
         Array[File?] cov_out_txt
         Array[File?] percent_cvg_csv
+        File covid_genome
+        File gene_map
+        File nextclade_qc
+        File covid_ref_tree
         File nextclade_json_parser_script
         File concat_results_script
         String seq_run
@@ -25,7 +29,11 @@ workflow classifyCOVIDlineage {
 
     call nextclade {
         input:
-            multifasta = concatenate.cat_fastas
+            multifasta = concatenate.cat_fastas,
+            ref = covid_genome,
+            gff = gene_map,
+            qc = nextclade_qc,
+            tree = covid_ref_tree
     }
 
     call parse_nextclade {
@@ -144,11 +152,15 @@ task nextclade {
 
     input {
         File multifasta
+        File ref
+        File gff
+        File qc
+        File tree
     }
 
     command {
         nextclade --version > VERSION
-        nextclade --input-fasta "${multifasta}" --output-json nextclade.json --output-csv nextclade.csv --output-tree nextclade.auspice.json
+        nextclade --input-fasta ${multifasta} --input-root-seq ${ref} --input-tree ${tree} --input-qc-config ${qc} --input-gene-map ${gff} --output-json nextclade.json --output-csv nextclade.csv --output-tree nextclade.auspice.json
     }
 
     output {
@@ -159,7 +171,7 @@ task nextclade {
     }
 
     runtime {
-        docker: "nextstrain/nextclade:0.13.0"
+        docker: "nextstrain/nextclade"
         memory: "16 GB"
         cpu: 4
         disks: "local-disk 50 HDD"
